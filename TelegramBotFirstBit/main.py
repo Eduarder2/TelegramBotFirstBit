@@ -44,7 +44,10 @@ def def_position(message):
     else:
 
         # Необходимо добавить кнопку "Приступим!"
+        
 
+        # Создаем экземпляр класса, соответствующего должности 
+        # И переходим к обработке наряда при нажатии кнопки "Приступим!"
         bot.send_message(id_, 'Привет, ' + id_position_name[id_][1])
         pos = id_position_name[id_][0]
         name = id_position_name[id_][1]
@@ -66,6 +69,10 @@ def process_order(message):
     pos = id_position_name[id_][0]
     if pos == 'manager':
         if message.text == 'Приступим!':
+            # Возможно исключение - KeyError - если экземпляр класса 
+            # еще не создан. Ошибка возникнет при отправке сообщения 
+            # "Приступим!", без команды /start
+
             active_users[pos][id_].send_message_to_coordinator()
     elif pos == 'implementer':
         pass
