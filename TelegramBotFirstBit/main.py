@@ -72,12 +72,11 @@ def process_order(message):
     id_ = str(message.chat.id)
     pos = id_position_name[id_][0]
     if pos == 'manager':
-        if message.text == 'Приступим!' and id_ in active_users[pos]:
-            # Возможно исключение - KeyError - если экземпляр класса 
-            # еще не создан. Ошибка возникнет при отправке сообщения 
-            # "Приступим!", без команды /start
-
-            active_users[pos][id_].send_message_to_coordinator()
+        if id_ in active_users[pos]:
+            active_users[pos][id_].dialog_with_bot(message)
+        else:
+            bot.send_message(id_, text='Рабочий день стоит начинать'+\
+                             ' с команды /start')
     elif pos == 'implementer':
         pass
     elif pos == 'coordinator':
