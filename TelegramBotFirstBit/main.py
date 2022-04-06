@@ -1,14 +1,16 @@
 ﻿
 
 import telebot
+from telebot import types
+
 import positions
 
 # Username пользователей, взаимодействующих с ботом
 active_users = {
-    'manager': [],
-    'implementer': [],
-    'coordinator': [],
-    'administrator': []
+    'manager': dict(),
+    'implementer': dict(),
+    'coordinator': dict(),
+    'administrator': dict()
     }
 
 # Нужно определиться, где будем хранить БД
@@ -43,22 +45,24 @@ def def_position(message):
                          'Для уточнения информации обратитесь к координатору.')
     else:
 
-        # Необходимо добавить кнопку "Приступим!"
-        
+        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        button_ready = types.KeyboardButton('Приступим!')
+        markup.add(button_ready)
 
         # Создаем экземпляр класса, соответствующего должности 
         # И переходим к обработке наряда при нажатии кнопки "Приступим!"
-        bot.send_message(id_, 'Привет, ' + id_position_name[id_][1])
+        bot.send_message(id_, 'Привет, ' + id_position_name[id_][1],\
+                         reply_markup=markup)
         pos = id_position_name[id_][0]
         name = id_position_name[id_][1]
         if pos == 'manager':
-            active_users[pos].append({id_: positions.Manager(name, id_)})
+            active_users[pos][id_] = positions.Manager(name, id_)
         elif pos == 'implementer':
-            active_users[pos].append({id_: positions.Implementer(name, id_)})
+            active_users[pos][id_] = positions.Implementer(name, id_)
         elif pos == 'coordinator':
-            active_users[pos].append({id_: positions.Coordinator(name, id_)})
+            active_users[pos][id_] = positions.Coordinator(name, id_)
         elif pos == 'administrator':
-            active_users[pos].append({id_: positions.Administrator(name, id_)})
+            active_users[pos][id_] = positions.Administrator(name, id_)
         else:
             pass # Написать обработку исключений
 
@@ -68,7 +72,7 @@ def process_order(message):
     id_ = str(message.chat.id)
     pos = id_position_name[id_][0]
     if pos == 'manager':
-        if message.text == 'Приступим!':
+        if message.text == 'Приступим!' and id_ in active_users[pos]:
             # Возможно исключение - KeyError - если экземпляр класса 
             # еще не создан. Ошибка возникнет при отправке сообщения 
             # "Приступим!", без команды /start
