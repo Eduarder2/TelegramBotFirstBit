@@ -45,7 +45,8 @@ def def_position(message):
                          'Для уточнения информации обратитесь к координатору.')
     else:
 
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True,\
+                                           one_time_keyboard=True)
         button_ready = types.KeyboardButton('Приступим!')
         markup.add(button_ready)
 

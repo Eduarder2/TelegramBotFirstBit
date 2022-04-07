@@ -3,6 +3,8 @@
 import telebot
 from telebot import types
 
+from order import Order
+
 try:
     with open('TOKEN.txt') as token:
         TOKEN = token.readline()
@@ -12,13 +14,25 @@ except FileNotFoundError:
 # Почти во все методы необходимо добавить кнопку "Назад", возможно, 
 # стоит сделать это глобальной фунцией или методом суперкласса ActiveUser
 
-class Manager(telebot.TeleBot):
+class ActiveUser(telebot.TeleBot):
 
-    
-    def __init__(self, name, id_, id_coordinator='935171424', token=TOKEN):
+    def __init__(self, name, id_, token=TOKEN):
         super().__init__(token)
         self.name = name
         self.id = id_
+        self.state_order = 1
+
+    def undo_last_action(self):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button_undo = types.KeyboardButton('Назад')
+        markup.add(button_undo)
+
+
+
+class Manager(ActiveUser):
+    
+    def __init__(self, name, id_, id_coordinator='935171424', token=TOKEN):
+        super().__init__(name, id_)
         self.id_coordinator = id_coordinator
         self.message_to_coordinator = {
             # 1 - номер наряда, 2 - имя клиента, 3 - телефон клиента,
