@@ -4,6 +4,7 @@ import telebot
 from telebot import types
 
 import positions
+from positions import PATH_ID_POSITION_NAME
 
 # Username пользователей, взаимодействующих с ботом
 active_users = {
@@ -13,8 +14,6 @@ active_users = {
     'administrator': dict()
     }
 
-# Нужно определиться, где будем хранить БД
-PATH_ID_POSITION_NAME = 'C:\\Users\\Эдуард\\Desktop\\1.txt'
 
 try:
     with open('TOKEN.txt') as token:
@@ -37,23 +36,31 @@ bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def def_position(message):
-    ''' Define position of employee (manager, admin, ...) '''
+    ''' Функция начала рабочего дня. Выполняется при использовании 
+    команды /start в диалоге с ботом.
+    
+    Аргумент - message (см. https://core.telegram.org/bots/api), 
+    message.text всегда равен str(/start). Функция всегда возвращает 
+    некоторое сообщение любому пользователю, а если пользователь 
+    сотрудник компании, то создает экземпляр класса, соответствующего 
+    должности (positions) и вызывает функцию process_order
+    
+    '''
 
     id_ = str(message.chat.id)
-    if not id_ in id_position_name.keys():
-        bot.send_message(id_, text='Вы не числитесь сотрудником компании. ' +\
+    if not id_ in id_position_name:
+        bot.send_message(id_, text='Вы не числитесь сотрудником компании. '
                          'Для уточнения информации обратитесь к координатору.')
     else:
 
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True,\
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                            one_time_keyboard=True)
         button_ready = types.KeyboardButton('Приступим!')
         markup.add(button_ready)
 
-        # Создаем экземпляр класса, соответствующего должности 
-        # И переходим к обработке наряда при нажатии кнопки "Приступим!"
-        bot.send_message(id_, 'Привет, ' + id_position_name[id_][1],\
+        bot.send_message(id_, 'Привет, ' + id_position_name[id_][1],
                          reply_markup=markup)
+
         pos = id_position_name[id_][0]
         name = id_position_name[id_][1]
         if pos == 'manager':
@@ -70,24 +77,26 @@ def def_position(message):
     
 @bot.message_handler(content_types=['text'])
 def process_order(message):
+    ''' Функция вызывается при отправки любого текстового сообщения 
+    боту, отличного от команд типа /start.
+
+    Аргумент - message (см. https://core.telegram.org/bots/api). 
+    Функция осуществляет взаимодействие с сотрудником в зависимости 
+    от его должности (см. positions). Если пользователь не сотрудник, 
+    то он получит соответствующее сообщение. 
+
+    '''
     id_ = str(message.chat.id)
-    pos = id_position_name[id_][0]
-    if pos == 'manager':
+    if id_ in id_position_name:
+        pos = id_position_name[id_][0]
         if id_ in active_users[pos]:
             active_users[pos][id_].dialog_with_bot(message)
         else:
-            bot.send_message(id_, text='Рабочий день стоит начинать'+\
+            bot.send_message(id_, text='Рабочий день стоит начинать'
                              ' с команды /start')
-    elif pos == 'implementer':
-        pass
-    elif pos == 'coordinator':
-        pass
-    elif pos == 'administrator':
-        pass
     else:
-        pass 
-
-
+        bot.send_message(id_, text='Вы не числитесь сотрудником компании. '
+                         'Для уточнения информации обратитесь к координатору.')
 
 
 bot.infinity_polling()

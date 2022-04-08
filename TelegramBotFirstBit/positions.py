@@ -5,6 +5,8 @@ from telebot import types
 
 from order import Order
 
+PATH_ID_POSITION_NAME = 'C:\\Users\\Эдуард\\Desktop\\1.txt'
+
 try:
     with open('TOKEN.txt') as token:
         TOKEN = token.readline()
@@ -68,7 +70,7 @@ class Manager(ActiveUser):
 
 
     def get_phone(self, message):
-        super().send_message(self.id, text='Введите номер телефона, по ' +\
+        super().send_message(self.id, text='Введите номер телефона, по '
                              'которому нужно позвонить внедренцу')
         self.change_message_to_coordinator(message)
 
@@ -79,15 +81,15 @@ class Manager(ActiveUser):
 
 
     def get_scheduled_date(self, message):
-        super().send_message(self.id, 'Введите сроки исполнения, ' +\
-                             'согласованные с клиентом, либо напишите - ' +\
+        super().send_message(self.id, 'Введите сроки исполнения, '
+                             'согласованные с клиентом, либо напишите - '
                              ' нет - если четкие сроки не обсуждались')
         self.change_message_to_coordinator(message)
 
 
     def send_message_to_coordinator(self):
         self.message_to_coordinator['state'] = 1
-        super().send_message(self.id_coordinator,\
+        super().send_message(self.id_coordinator,
                              text=str(self.message_to_coordinator))
 
     
@@ -106,13 +108,99 @@ class Manager(ActiveUser):
         elif state == 6:
             self.send_message_to_coordinator()
 
-
         
 class Implementer(telebot.TeleBot):
-    pass
+    
+    def __init__(self):
+        pass
+
+
+    def give_list_of_orders(self):
+        pass
+
+
+    def get_date_start_fact(self):
+        pass
+
+
+    def get_date_finish(self):
+        pass
+
+
+    def send_message_to_manager(self):
+        pass
+
+
+    def send_message_to_coordinator(self):
+        pass
+
 
 class Coordinator(telebot.TeleBot):
-    pass
+    
+    def __init__(self, name, id_):
+        self.name = name
+        self.id = id_
+
+    
+    def give_list_of_orders(self):
+        pass
+
+
+    def give_list_of_active_users(self):
+        pass
+
+
+    def give_list_of_employees(self):
+        pass
+
+
+    def add_employee(self, id_employee, position_employee, name_employee):
+        with open(PATH_ID_POSITION_NAME, 'a', encoding='UTF-8') as employees:
+            employees.write(id_employee + '\t' + position_employee +
+                            '\t' + name_employee)
+        super().send_message(self.id, 'Изменения вступят в силу при следующем'
+                             ' запуске бота!')
+
+
+    def delete_employee(self, id_):
+        with open(PATH_ID_POSITION_NAME, encoding='UTF-8') as employees:
+            list_ = employees.readlines()
+        for i in range(len(list_) - 1, -1, -1):
+            if list_[i].find(id_) != -1:
+                list_.pop(i)
+        with open(PATH_ID_POSITION_NAME, 'wt', encoding='UTF-8') as employees:
+            employees.writelines(list_)
+        super().send_message(self.id, 'Изменения вступят в силу при следующем'
+                             ' запуске бота!')
+
+    
+    def get_number_of_order(self):
+        pass
+    
+
+    def get_implementer(self):
+        pass
+
+
+    def get_date_start_plan(self):
+        pass
+
+
+    def send_message_to_implementer(self):
+        pass
+
+
+    def dialog_with_bot(self, message):
+        pass
+
 
 class Administrator(telebot.TeleBot):
-    pass
+    
+    def __init__(self):
+        pass
+
+
+    def change_coordinator(self):
+        pass
+
+
