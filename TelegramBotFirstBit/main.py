@@ -55,8 +55,8 @@ def def_position(message):
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
                                            one_time_keyboard=True)
-        button_ready = types.KeyboardButton('Приступим!')
-        markup.add(button_ready)
+        but_ready = types.KeyboardButton('Приступим!')
+        markup.add(but_ready)
 
         bot.send_message(id_, 'Привет, ' + id_position_name[id_][1],
                          reply_markup=markup)

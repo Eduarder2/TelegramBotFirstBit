@@ -24,16 +24,22 @@ class ActiveUser(telebot.TeleBot):
         self.id = id_
         self.state_order = 1
 
-    def undo_last_action(self):
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button_undo = types.KeyboardButton('Назад')
-        markup.add(button_undo)
+        back_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, 
+                                                  one_time_keyboard=True)
+        but_back = types.KeyboardButton('Назад')
+        back_keyboard.add(but_back)
+        self.back_keyboard = back_keyboard
+
+    #def undo_last_action(self):
+    #    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    #    button_undo = types.KeyboardButton('Назад')
+    #    markup.add(button_undo)
 
 
 
 class Manager(ActiveUser):
     
-    def __init__(self, name, id_, id_coordinator='935171424', token=TOKEN):
+    def __init__(self, name, id_, id_coordinator='935171424'):
         super().__init__(name, id_)
         self.id_coordinator = id_coordinator
         self.message_to_coordinator = {
@@ -60,17 +66,17 @@ class Manager(ActiveUser):
         
 
     def get_number_of_order(self, message):
-        super().send_message(self.id, text='Введите номер наряда')
+        super().send_message(self.id, 'Введите номер наряда')
         self.change_message_to_coordinator(message)
 
 
     def get_clients_name(self, message):
-        super().send_message(self.id, text='Введите имя клиента')
+        super().send_message(self.id, 'Введите имя клиента')
         self.change_message_to_coordinator(message)
 
 
     def get_phone(self, message):
-        super().send_message(self.id, text='Введите номер телефона, по '
+        super().send_message(self.id, 'Введите номер телефона, по '
                              'которому нужно позвонить внедренцу')
         self.change_message_to_coordinator(message)
 
@@ -135,19 +141,109 @@ class Implementer(telebot.TeleBot):
         pass
 
 
-class Coordinator(telebot.TeleBot):
+    def dialog_with_bot(self, message):
+        pass
+
+
+class Coordinator(ActiveUser):
     
     def __init__(self, name, id_):
-        self.name = name
-        self.id = id_
+        '''Закончена
+        '''
+        super().__init__(name, id_)
+        self.state = list('Главное меню')
 
-    
-    def give_list_of_orders(self):
-        pass
+        main_keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, 
+                                row_width=2)
+        but_upper_left = types.KeyboardButton('Распределить наряд')
+        but_upper_right = types.KeyboardButton('Списки нарядов')
+        but_lower_left = types.KeyboardButton('Список сотрудников')
+        but_lower_right = types.KeyboardButton('Список активных'
+                                               ' пользователей')
+        main_keyboard.add(but_upper_left, but_upper_right, 
+                          but_lower_left, but_lower_right)
+        self.main_keyboard = main_keyboard
 
+        lists_of_orders_keyboard = types.ReplyKeyboardMarkup(
+                                        one_time_keyboard=True, row_width=2)
+        but_upper_left = types.KeyboardButton('Активные наряды внедренцев')
+        but_upper_right = types.KeyboardButton('Наряды, распределенные на '
+                                               'внедренцев')
+        but_lower_left = types.KeyboardButton('Наряды, распределенные на '
+                                              'координатора')
+        but_lower_right = types.KeyboardButton('Назад')
+        lists_of_orders_keyboard.add(but_upper_left, but_upper_right, 
+                                     but_lower_left, but_lower_right)
+        self.lists_of_orders_keyboard = lists_of_orders_keyboard
+
+        list_of_employees_keyboard = types.ReplyKeyboardMarkup(
+                                        one_time_keyboard=True, row_width=2)
+        but_upper_left = types.KeyboardButton('Добавить сотрудника')
+        but_upper_right = types.KeyboardButton('Удалить сотрудника')
+        but_lower = types.KeyboardButton('Назад')
+        list_of_employees_keyboard.add(but_upper_left, but_upper_right, 
+                                       but_lower)
+        self.list_of_employees_keyboard = list_of_employees_keyboard
+        
+
+    def give_main_menu(self, error=False):
+        '''Закончена
+        '''
+        self.state[0] = 'Главное меню'
+        if error:
+            super().send_message(self.id, 'Не понял вас! Повторите попытку,'
+                                 ' используя всплывающую клавиатуру.', 
+                                 reply_markup=self.main_keyboard)
+        else:
+            super().send_message(self.id, 'Главное меню',
+                                 reply_markup=self.main_keyboard)
+
+
+    def give_orders_menu(self, error=False):
+        '''Закончена
+        '''
+        self.state[0] = 'Списки нарядов'
+        if error:
+            super().send_message(self.id, 'Не понял вас! Повторите попытку,'
+                                 ' используя всплывающую клавиатуру.', 
+                                 reply_markup=self.lists_of_orders_keyboard)
+        else:
+            super().send_message(self.id, 'Какой список вы хотите получить?',
+                                 reply_markup=self.lists_of_orders_keyboard)
+
+
+    def give_employees_menu(self, error=False):
+        '''Закончена
+        '''
+        self.state[0] = 'Список сотрудников'
+        if error:
+            super().send_message(self.id, 'Не понял вас! Повторите попытку,'
+                                 ' используя всплывающую клавиатуру.', 
+                                 reply_markup=self.list_of_employees_keyboard)
+        else:
+            super().send_message(self.id, 'Зарегистрированные мной '
+                    'сотрудники. Вы можете добавить или удалить некоторых:',
+                    reply_markup=self.list_of_employees_keyboard)
+
+
+    def give_list_of_orders(self, kind):
+        ''' Не закончена, надо знать как и где хранится БД с нарядами.
+        Также надо определить класс Order.
+        '''
+        if kind == 'Активные наряды внедренцев':
+            pass
+        elif kind == 'Наряды, распределенные на внедренцев':
+            pass
+        elif kind == 'Наряды, распределенные на координатора':
+            pass
+        else:
+            self.give_orders_menu(error=True)
+            return
+        self.give_main_menu()
 
     def give_list_of_active_users(self):
-        pass
+        super().send_message(self.id, 'Сегодня со мной уже связались:',
+                             reply_markup=self.main_keyboard)
 
 
     def give_list_of_employees(self):
@@ -163,6 +259,9 @@ class Coordinator(telebot.TeleBot):
 
 
     def delete_employee(self, id_):
+        # Необходимо осуществить проверку в БД (НЕ в архиве), 
+        # есть ли активные наряды, связанные с этим сотрудником.
+
         with open(PATH_ID_POSITION_NAME, encoding='UTF-8') as employees:
             list_ = employees.readlines()
         for i in range(len(list_) - 1, -1, -1):
@@ -191,16 +290,77 @@ class Coordinator(telebot.TeleBot):
 
 
     def dialog_with_bot(self, message):
-        pass
+
+        if self.state[0] == 'Главное меню':
+            if message.text == 'Приступим':
+                self.give_main_menu()
+            elif message.text == 'Список активных пользователей':
+                self.give_list_of_active_users()
+            elif message.text == 'Список сотрудников':
+                self.give_employees_menu()
+            elif message.text == 'Списки нарядов':
+                self.give_orders_menu()
+            elif message.text == 'Распределить наряд':
+                # Эту ветку надо изменить
+                super().send_message(self.id, 'Эти наряды вам следует '
+                                     'распределить на внедренцев:')
+                self.state[0] = message.text
+            else:
+                self.give_main_menu(error=True)
+        elif self.state[0] == 'Список сотрудников':
+            # Эту ветку надо подкорректировать - вынести часть условий 
+            # в отдельные функции
+            if len(self.state) == 1:
+                if message.text in {'Добавить сотрудника', 'Удалить сотрудника'}:
+                    self.give_list_of_employees()
+                    self.state.append(message.text)
+                elif message.text == 'Назад':
+                    self.give_main_menu()
+                else:
+                    self.give_employees_menu(error=True)
+
+            if len(self.state) > 1:
+                if self.state[1] == 'Добавить сотрудника':
+                    self.add_employee(message)
+                elif self.state[1] == 'Удалить сотрудника':
+                    self.delete_employee(message)
+                else:
+                    self.state = list('Список сотрудников')
+                    self.give_employees_menu(error=True)
+        elif self.state[0] == 'Списки нарядов':
+            if message.text == 'Назад':
+                self.give_main_menu()
+            else:
+                self.give_list_of_orders(kind=message.text)
+        elif self.state[0] == 'Распределить наряд':
+            pass
+        else:
+            self.give_main_menu(error=True)
 
 
-class Administrator(telebot.TeleBot):
+
+
+
+class Administrator(Coordinator):
     
-    def __init__(self):
+    def __init__(self, name, id_):
+        super().__init__(name, id_)
+
+
+    def change_coordinator(self, id_old_coordinator, id_new_coordinator, name_employee):
+        ''' Функция для замены координатора.
+
+        Эквивалентна вызову двух функций: 
+        Coordinator.delete_employee(id_old_coordinator)
+        Coordinator.add_employee(id_new_coordinator, 'coordinator', name_employee)
+        Используется, если старый координатор не добавил нового,
+        но себя уже удалил
+        
+        '''
+        super().delete_employee(id_old_coordinator)
+        super().add_employee(id_new_coordinator, 'coordinator', name_employee)
+
+
+    def dialog_with_bot(self, message):
         pass
-
-
-    def change_coordinator(self):
-        pass
-
 
