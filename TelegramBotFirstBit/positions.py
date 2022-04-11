@@ -146,12 +146,16 @@ class Implementer(telebot.TeleBot):
 
 
 class Coordinator(ActiveUser):
+
+    state = ['Главное меню', None, None]
+    stack = [state.copy()]
     
     def __init__(self, name, id_):
         '''Закончена
         '''
         super().__init__(name, id_)
         self.state = ['Главное меню', None, None]
+        self.stack = [self.state.copy()]
 
         main_keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, 
                                 row_width=2)
@@ -304,8 +308,62 @@ class Coordinator(ActiveUser):
         self.state[1] += 1
 
 
+    def change_state(self, message):
+        # final_step - число шагов в соответствующей функции, 
+        # соответствующей состоянию
+
+        state = self.state
+        if message.text == 'Назад':
+            if len(self.stack) > 1:
+                self.stack.pop()
+                state = self.stack[-1]
+        else:
+            if state[0] == 'Главное меню':
+                if message.text in {'Список сотрудников', 
+                                    'Списки нарядов', 
+                                    'Распределить наряд'}:
+                    state[0] = message.text
+                    state[1] = 0
+                elif message.text == 'Список активных пользователей':
+                    state[1] = message.text
+            elif state[0] == 'Список сотрудников':
+                if state[1] == 0:
+                    if message.text in {'Добавить сотрудника', 
+                                        'Удалить сотрудника'}:
+                        state[1] = message.text
+                elif state[1] == 'Добавить сотрудника':
+                    if state[2] == final_step:
+                        state = Coordinator.state
+                    else:
+                        state[2] += 1
+                elif state[1] == 'Добавить сотрудника':
+                    if state[2] == final_step:
+                        state = Coordinator.state
+                    else:
+                        state[2] += 1
+            elif state[0] == 'Список нарядов':
+                if message.text in {'Активные наряды внедренцев',
+                                    'Наряды, распределенные на внедренцев',
+                                    'Наряды, распределенные на координатора'}:
+                    state[1] = message.text
+                elif state[1] in {'Активные наряды внедренцев',
+                                  'Наряды, распределенные на внедренцев',
+                                  'Наряды, распределенные на координатора'}
+                    state = Coordinator.state
+            elif state[0] == 'Распределить наряд':
+                if state[1] == final_step:
+                    state = Coordinator.state
+                else:
+                    state[1] += 1
+                    
+            self.stack.append(state)
+            if self.stack[-1] == Coordinator.state:
+                self.stack = Coordinator.stack
 
     def dialog_with_bot(self, message):
+        
+        self.change_state(message):
+        
 
         if self.state[0] == 'Главное меню':
             if message.text == 'Приступим':
