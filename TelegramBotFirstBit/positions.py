@@ -307,6 +307,31 @@ class Coordinator(ActiveUser):
             pass
         self.state[1] += 1
 
+    
+    def run_state(self, message):
+        
+        if state[0] == 'Главное меню':
+            if state[1] == 'Список активных пользователей':
+                self.give_list_of_active_users()
+            self.give_main_menu()
+        elif state[0] == 'Список сотрудников':
+            if state[1] == 0:
+                self.give_employees_menu()
+            elif state[1] == 'Добавить сотрудника':
+                self.add_employee()
+            elif state[1] == 'Удалить сотрудника':
+                self.delete_employee()
+        elif state[0] == 'Списки нарядов':
+            if state[1] == 0:
+                self.give_orders_menu()
+            elif state[1] in {'Активные наряды внедренцев',
+                              'Наряды, распределенные на внедренцев',
+                              'Наряды, распределенные на координатора'}:
+                self.give_list_of_orders(kind=state[1])
+        elif state[0] == 'Распределить наряд':
+            self.send_message_to_implementer(message)
+
+
 
     def change_state(self, message):
         # final_step - число шагов в соответствующей функции, 
@@ -362,46 +387,8 @@ class Coordinator(ActiveUser):
 
     def dialog_with_bot(self, message):
         
-        self.change_state(message):
-        
-
-        if self.state[0] == 'Главное меню':
-            if message.text == 'Приступим':
-                self.give_main_menu()
-            elif message.text == 'Список активных пользователей':
-                self.give_list_of_active_users()
-            elif message.text == 'Список сотрудников':
-                self.give_employees_menu()
-            elif message.text == 'Списки нарядов':
-                self.give_orders_menu()
-            elif message.text == 'Распределить наряд':
-                self.send_message_to_implementer(message)
-            else:
-                self.give_main_menu(error=True)
-        elif self.state[0] == 'Список сотрудников':
-            if self.state[1] == 'Добавить сотрудника':
-                self.add_employee(message)
-            elif self.state[1] == 'Удалить сотрудника':
-                self.delete_employee(message)
-            elif message.text in {'Добавить сотрудника', 'Удалить сотрудника'}:
-                self.give_list_of_employees()
-                self.state[1] = message.text
-            elif message.text == 'Назад':
-                self.give_main_menu()
-            else:
-                self.give_employees_menu(error=True)          
-        elif self.state[0] == 'Списки нарядов':
-            if message.text == 'Назад':
-                self.give_main_menu()
-            else:
-                self.give_list_of_orders(kind=message.text)
-        elif self.state[0] == 'Распределить наряд':
-            if message.text == 'Назад':
-                self.give_main_menu()
-            else:
-                self.send_message_to_implementer(message)
-        else:
-            self.give_main_menu(error=True)
+        self.change_state(message)
+        self.run_state(message)
 
 
 
