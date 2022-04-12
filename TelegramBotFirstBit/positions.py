@@ -7,6 +7,15 @@ from order import Order
 
 PATH_ID_POSITION_NAME = 'C:\\Users\\Эдуард\\Desktop\\1.txt'
 
+active_users = {
+    'manager': dict(),
+    'implementer': dict(),
+    'coordinator': dict(),
+    'administrator': dict()
+    }
+
+new_user = set()
+
 try:
     with open('TOKEN.txt') as token:
         TOKEN = token.readline()
@@ -24,16 +33,15 @@ class ActiveUser(telebot.TeleBot):
         self.id = id_
         self.state_order = 1
 
-        back_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, 
-                                                  one_time_keyboard=True)
+        back_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         but_back = types.KeyboardButton('Назад')
         back_keyboard.add(but_back)
         self.back_keyboard = back_keyboard
 
-    #def undo_last_action(self):
-    #    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    #    button_undo = types.KeyboardButton('Назад')
-    #    markup.add(button_undo)
+        continue_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        but_continue = types.KeyboardButton('Продолжить')
+        continue_keyboard.add(but_continue)
+        self.continue_keyboard = continue_keyboard
 
 
 
@@ -147,53 +155,55 @@ class Implementer(telebot.TeleBot):
 
 class Coordinator(ActiveUser):
 
-    state = ['Главное меню', None, None]
+    state = ['Главное меню', 0, 0]
     stack = [state.copy()]
     
     def __init__(self, name, id_):
         '''Закончена
         '''
         super().__init__(name, id_)
-        self.state = ['Главное меню', None, None]
+        self.state = ['Главное меню', 0, 0]
         self.stack = [self.state.copy()]
 
-        main_keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, 
-                                row_width=2)
+        main_keyboard = types.ReplyKeyboardMarkup(row_width=2)
         but_upper_left = types.KeyboardButton('Распределить наряд')
         but_upper_right = types.KeyboardButton('Списки нарядов')
         but_lower_left = types.KeyboardButton('Список сотрудников')
-        but_lower_right = types.KeyboardButton('Список активных'
-                                               ' пользователей')
+        but_lower_right = types.KeyboardButton('Активные пользователи')
         main_keyboard.add(but_upper_left, but_upper_right, 
                           but_lower_left, but_lower_right)
         self.main_keyboard = main_keyboard
 
-        lists_of_orders_keyboard = types.ReplyKeyboardMarkup(
-                                        one_time_keyboard=True, row_width=2)
+        lists_of_orders_keyboard = types.ReplyKeyboardMarkup(row_width=2)
         but_upper_left = types.KeyboardButton('Активные наряды внедренцев')
-        but_upper_right = types.KeyboardButton('Наряды, распределенные на '
-                                               'внедренцев')
-        but_lower_left = types.KeyboardButton('Наряды, распределенные на '
-                                              'координатора')
+        but_upper_right = types.KeyboardButton('Наряды внедренцев')
+        but_lower_left = types.KeyboardButton('Наряды координатора')
         but_lower_right = types.KeyboardButton('Назад')
         lists_of_orders_keyboard.add(but_upper_left, but_upper_right, 
                                      but_lower_left, but_lower_right)
         self.lists_of_orders_keyboard = lists_of_orders_keyboard
 
-        list_of_employees_keyboard = types.ReplyKeyboardMarkup(
-                                        one_time_keyboard=True, row_width=2)
+        list_of_employees_keyboard = types.ReplyKeyboardMarkup(row_width=2)
         but_upper_left = types.KeyboardButton('Добавить сотрудника')
         but_upper_right = types.KeyboardButton('Удалить сотрудника')
         but_lower = types.KeyboardButton('Назад')
         list_of_employees_keyboard.add(but_upper_left, but_upper_right, 
                                        but_lower)
         self.list_of_employees_keyboard = list_of_employees_keyboard
+
+        position_keyboard = types.ReplyKeyboardMarkup(row_width=2)
+        but_upper_left = types.KeyboardButton('manager')
+        but_upper_right = types.KeyboardButton('coordinator')
+        but_lower_left = types.KeyboardButton('implementer')
+        but_lower_right = types.KeyboardButton('Назад')
+        position_keyboard.add(but_upper_left, but_upper_right, 
+                              but_lower_left, but_lower_right)
+        self.position_keyboard = position_keyboard
         
 
     def give_main_menu(self, error=False):
         '''Закончена
         '''
-        self.state = ['Главное меню', 0, 0]
         if error:
             super().send_message(self.id, 'Не понял вас! Повторите попытку,'
                                  ' используя всплывающую клавиатуру.', 
@@ -206,7 +216,6 @@ class Coordinator(ActiveUser):
     def give_orders_menu(self, error=False):
         '''Закончена
         '''
-        self.state[0] = 'Списки нарядов'
         if error:
             super().send_message(self.id, 'Не понял вас! Повторите попытку,'
                                  ' используя всплывающую клавиатуру.', 
@@ -219,7 +228,6 @@ class Coordinator(ActiveUser):
     def give_employees_menu(self, error=False):
         '''Закончена
         '''
-        self.state[0] = 'Список сотрудников'
         if error:
             super().send_message(self.id, 'Не понял вас! Повторите попытку,'
                                  ' используя всплывающую клавиатуру.', 
@@ -236,9 +244,9 @@ class Coordinator(ActiveUser):
         '''
         if kind == 'Активные наряды внедренцев':
             pass
-        elif kind == 'Наряды, распределенные на внедренцев':
+        elif kind == 'Наряды внедренцев':
             pass
-        elif kind == 'Наряды, распределенные на координатора':
+        elif kind == 'Наряды координатора':
             super().send_message(self.id, 'Эти наряды вам следует '
                                  'распределить на внедренцев:')
             pass
@@ -247,36 +255,78 @@ class Coordinator(ActiveUser):
             return
         self.give_main_menu()
 
+
     def give_list_of_active_users(self):
-        super().send_message(self.id, 'Сегодня со мной уже связались:',
-                             reply_markup=self.main_keyboard)
+        '''Закончена
+        '''
+        super().send_message(self.id, 'Сегодня со мной уже связались:')
+        for position in active_users.items():
+            text = [position[0]]
+            for employee in position[1].items():
+                list_ = [employee[0], employee[1].name]
+                text.append(' '.join(list_))
+            text = '\n'.join(text)
+            super().send_message(self.id, text)
 
 
     def give_list_of_employees(self):
-        pass
+        '''Закончена
+        '''
+        with open(PATH_ID_POSITION_NAME, encoding='UTF-8') as employees:
+            text = employees.readlines()
+        text = '\n'.join(text)
+        self.send_message(self.id, text)
 
 
-    def add_employee(self, id_employee, position_employee, name_employee):
-        with open(PATH_ID_POSITION_NAME, 'a', encoding='UTF-8') as employees:
-            employees.write(id_employee + '\t' + position_employee +
-                            '\t' + name_employee)
-        super().send_message(self.id, 'Изменения вступят в силу при следующем'
-                             ' запуске бота!')
+    def add_employee(self, message):
+        '''Закончена
+        '''
+        if self.state[2] == 0:
+            self.cache = [None, None, None]
+            super().send_message(self.id, 'Укажите id сотрудника, которого '
+                                 'хотите добавить.')
+            text = ['Этих пользователей я не знаю: ']
+            for i in range(len(new_user)):
+                text.append(' '.join(new_user.pop()))
+            text = '\n'.join(text)
+            super().send_message(self.id, text, 
+                                 reply_markup=self.back_keyboard)
+        elif self.state[2] == 1:
+            self.cache[0] = message.text
+            super().send_message(self.id, 'Укажите должность сотрудника', 
+                                 reply_markup=self.position_keyboard)
+        elif self.state[2] == 2:
+            self.cache[1] = message.text
+            super().send_message(self.id, 'Укажите ФИ сотрудника')
+        elif self.state[2] == 3:
+            self.cache[2] = message.text
+            text = '\t'.join(self.cache) + '\n'
+            with open(PATH_ID_POSITION_NAME, 'a', encoding='UTF-8') as employees:
+                employees.write(text)
+                super().send_message(self.id, 'Я добавил сотрудника:\n' + text)
+                super().send_message(self.id, 'Изменения вступят в '
+                                     'силу при следующем запуске бота!',
+                                     reply_markup=self.continue_keyboard)
 
 
-    def delete_employee(self, id_):
+    def delete_employee(self, message):
+        '''Не закончена
+        '''
         # Необходимо осуществить проверку в БД (НЕ в архиве), 
         # есть ли активные наряды, связанные с этим сотрудником.
-
-        with open(PATH_ID_POSITION_NAME, encoding='UTF-8') as employees:
-            list_ = employees.readlines()
-        for i in range(len(list_) - 1, -1, -1):
-            if list_[i].find(id_) != -1:
-                list_.pop(i)
-        with open(PATH_ID_POSITION_NAME, 'wt', encoding='UTF-8') as employees:
-            employees.writelines(list_)
-        super().send_message(self.id, 'Изменения вступят в силу при следующем'
-                             ' запуске бота!')
+        if self.state[2] == 0:
+            super().send_message(self.id, 'Укажите id сотрудника, которого '
+                                 'хотите удалить.')
+        elif self.state[2] == 1:
+            id_ = message.text
+            with open(PATH_ID_POSITION_NAME, encoding='UTF-8') as employees:
+                list_ = employees.readlines()
+            new_list_ = [emp for emp in list_ if emp.find(id_)]
+            with open(PATH_ID_POSITION_NAME, 'wt', encoding='UTF-8') as employees:
+                employees.writelines(new_list_)
+            super().send_message(self.id, 'Изменения вступят в '
+                                 'силу при следующем запуске бота!', 
+                                 reply_markup=self.continue_keyboard)
 
     
     def get_number_of_order(self, message):
@@ -292,98 +342,97 @@ class Coordinator(ActiveUser):
 
 
     def send_message_to_implementer(self, message):
-        if self.state[1] == 0:
-            self.state[0] = 'Распределить наряд'
-            self.give_list_of_orders(kind='Наряды, распределенные на '
-                                     'координатора')
-            self.get_number_of_order(message)
-        elif self.state[1] == 1:
-            self.get_implementer(message)
-        elif self.state[1] == 2:
-            self.get_date_start_plan(message)
-        elif self.state[1] == 3:
-            # Здесь будет отправка сообщения внедренцу
-            self.state[1] = -1
-            pass
-        self.state[1] += 1
+        pass
 
     
     def run_state(self, message):
-        
+        '''Вызывает функцию, соответсвующую текущему состоянию
+        (self.state) координатора.
+        '''
+
+        state = self.state
         if state[0] == 'Главное меню':
-            if state[1] == 'Список активных пользователей':
+            if state[1] == 'Активные пользователи':
                 self.give_list_of_active_users()
             self.give_main_menu()
         elif state[0] == 'Список сотрудников':
             if state[1] == 0:
                 self.give_employees_menu()
+                self.give_list_of_employees()
             elif state[1] == 'Добавить сотрудника':
-                self.add_employee()
+                self.add_employee(message)
             elif state[1] == 'Удалить сотрудника':
-                self.delete_employee()
+                self.delete_employee(message)
         elif state[0] == 'Списки нарядов':
             if state[1] == 0:
                 self.give_orders_menu()
             elif state[1] in {'Активные наряды внедренцев',
-                              'Наряды, распределенные на внедренцев',
-                              'Наряды, распределенные на координатора'}:
+                              'Наряды внедренцев',
+                              'Наряды координатора'}:
                 self.give_list_of_orders(kind=state[1])
         elif state[0] == 'Распределить наряд':
             self.send_message_to_implementer(message)
 
 
-
     def change_state(self, message):
+        '''Изменяет состояние (self.state) координатора, исходя из
+        полученного сообщения (message) и текущего состояния. Если 
+        message.text = 'Назад', то записывается предыдущее состояние.
+        '''
         # final_step - число шагов в соответствующей функции, 
-        # соответствующей состоянию
+        # соответствующей состоянию. Надо будет убрать
+        final_step = 2
 
-        state = self.state
         if message.text == 'Назад':
             if len(self.stack) > 1:
                 self.stack.pop()
-                state = self.stack[-1]
+                self.state = self.stack[-1].copy()
         else:
-            if state[0] == 'Главное меню':
+            if self.state[0] == 'Главное меню':
                 if message.text in {'Список сотрудников', 
                                     'Списки нарядов', 
                                     'Распределить наряд'}:
-                    state[0] = message.text
-                    state[1] = 0
-                elif message.text == 'Список активных пользователей':
-                    state[1] = message.text
-            elif state[0] == 'Список сотрудников':
-                if state[1] == 0:
+                    self.state[0] = message.text
+                    self.state[1] = 0
+                elif message.text == 'Активные пользователи':
+                    self.state[1] = message.text
+            elif self.state[0] == 'Список сотрудников':
+                if self.state[1] == 0:
                     if message.text in {'Добавить сотрудника', 
                                         'Удалить сотрудника'}:
-                        state[1] = message.text
-                elif state[1] == 'Добавить сотрудника':
-                    if state[2] == final_step:
-                        state = Coordinator.state
+                        self.state[1] = message.text
+                elif self.state[1] == 'Добавить сотрудника':
+                    if self.state[2] == 3:
+                        self.state = Coordinator.state.copy()
                     else:
-                        state[2] += 1
-                elif state[1] == 'Добавить сотрудника':
-                    if state[2] == final_step:
-                        state = Coordinator.state
+                        self.state[2] += 1
+                elif self.state[1] == 'Удалить сотрудника':
+                    if self.state[2] == 1:
+                        self.state = Coordinator.state.copy()
                     else:
-                        state[2] += 1
-            elif state[0] == 'Список нарядов':
+                        self.state[2] += 1
+            elif self.state[0] == 'Список нарядов':
                 if message.text in {'Активные наряды внедренцев',
-                                    'Наряды, распределенные на внедренцев',
-                                    'Наряды, распределенные на координатора'}:
-                    state[1] = message.text
-                elif state[1] in {'Активные наряды внедренцев',
-                                  'Наряды, распределенные на внедренцев',
-                                  'Наряды, распределенные на координатора'}
-                    state = Coordinator.state
-            elif state[0] == 'Распределить наряд':
-                if state[1] == final_step:
-                    state = Coordinator.state
+                                    'Наряды внедренцев',
+                                    'Наряды координатора'}:
+                    self.state[1] = message.text
+                elif self.state[1] in {'Активные наряды внедренцев',
+                                       'Наряды внедренцев',
+                                       'Наряды координатора'}:
+                    self.state = Coordinator.state.copy()
+            elif self.state[0] == 'Распределить наряд':
+                if self.state[1] == final_step:
+                    self.state = Coordinator.state.copy()
                 else:
-                    state[1] += 1
+                    self.state[1] += 1
                     
-            self.stack.append(state)
+            self.stack.append(self.state.copy())
             if self.stack[-1] == Coordinator.state:
-                self.stack = Coordinator.stack
+                self.stack = Coordinator.stack.copy()
+
+        print(self.stack)
+        print(self.state)
+
 
     def dialog_with_bot(self, message):
         

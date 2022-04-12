@@ -5,14 +5,9 @@ from telebot import types
 
 import positions
 from positions import PATH_ID_POSITION_NAME
+from positions import active_users
+from positions import new_user
 
-# Username пользователей, взаимодействующих с ботом
-active_users = {
-    'manager': dict(),
-    'implementer': dict(),
-    'coordinator': dict(),
-    'administrator': dict()
-    }
 
 
 try:
@@ -51,6 +46,9 @@ def def_position(message):
     if not id_ in id_position_name:
         bot.send_message(id_, text='Вы не числитесь сотрудником компании. '
                          'Для уточнения информации обратитесь к координатору.')
+        if len(new_user) > 10:
+            new_user.clear()
+        new_user.add((id_, message.from_user.first_name))
     else:
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True,
