@@ -26,6 +26,10 @@ except FileNotFoundError:
 
 class ActiveUser(telebot.TeleBot):
 
+
+    state = ['Главное меню', 0, 0]
+    stack = [state.copy()]
+
     def __init__(self, name, id_, token=TOKEN):
         super().__init__(token)
         self.name = name
@@ -42,19 +46,42 @@ class ActiveUser(telebot.TeleBot):
         continue_keyboard.add(but_continue)
         self.continue_keyboard = continue_keyboard
 
+        lists_of_orders_keyboard = types.ReplyKeyboardMarkup(row_width=2)
+        but_upper_left = types.KeyboardButton('Активные наряды внедренцев')
+        but_upper_right = types.KeyboardButton('Наряды внедренцев')
+        but_lower_left = types.KeyboardButton('Наряды координатора')
+        but_lower_right = types.KeyboardButton('Назад')
+        lists_of_orders_keyboard.add(but_upper_left, but_upper_right, 
+                                     but_lower_left, but_lower_right)
+        self.lists_of_orders_keyboard = lists_of_orders_keyboard
+
 
 class Manager(ActiveUser):
+
     
-    def __init__(self, name, id_, id_coordinator='935171424'):
+    def __init__(self, name, id_):
         super().__init__(name, id_)
-        self.id_coordinator = id_coordinator
+
+        try:
+            self.id_coordinator = active_users['coordinator'].popitem()[0]
+        except KeyError:
+            self.id_coordinator = id_
+            self.send_message(id_, 'Внимание! В системе отсутствует '
+                              'координатор. Все отправленные вами '
+                              'сообщения вам же и вернутся.')
+
+        main_keyboard = types.ReplyKeyboardMarkup(row_width=2)
+        but_upper_left = types.KeyboardButton('Списки нарядов')
+        but_upper_right = types.KeyboardButton('Создать наряд')
+        main_keyboard.add(but_upper_left, but_upper_right)
+        self.main_keyboard = main_keyboard
+
+
         self.message_to_coordinator = {
             # 1 - номер наряда, 2 - имя клиента, 3 - телефон клиента,
             # 4 - описание проблемы клиента, 5 - срок исполнения,
             # 0 - имя менеджера,
             
-            # Стоит привести словарь к виду {number: [value, field_name]}
-            # Для большей читаемости
            
             'state': 1,
             0: self.name,
@@ -64,6 +91,14 @@ class Manager(ActiveUser):
             4: '',
             5: '',
             }
+
+    def give_main_menu(self):
+        pass
+
+
+    def give_orders_menu(self):
+        pass
+
 
     def change_message_to_coordinator(self, message):
         state = self.message_to_coordinator['state']
@@ -104,8 +139,47 @@ class Manager(ActiveUser):
         super().send_message(self.id_coordinator,
                              text=str(self.message_to_coordinator))
 
+
+    def change_state(self, message):
+        '''
+        '''
+        if message.text == 'Назад':
+            if len(self.stack) > 1:
+                self.stack.pop()
+                self.state = self.stack[-1].copy()
+        else:
+            if self.state[0] == 'Главное меню':
+                if message.text in {'Списки нарядов', 'Создать наряд'}:
+                    self.state[0] = message.text
+            elif self.state[0] == 'Списки нарядов':
+                if message.text in {'Активные наряды внедренцев',
+                                    'Наряды внедренцев',
+                                    'Наряды координатора'}:
+                    self.state[1] = message.text
+                elif state[1] in {'Активные наряды внедренцев',
+                                  'Наряды внедренцев',
+                                  'Наряды координатора'}:
+                    self.state = Manager.state.copy()
+            elif self.state[0] == 'Создать наряд':
+                if self.state[1] == final_step:
+                    self.state = ActiveUser.state.copy()
+                else:
+                    self.state += 1
+
+            self.stack.append(self.state.copy())
+            if self.stack[-1] == ActiveUser.state:
+                self.stack = ActiveUser.stack.copy()
+
+
+    def run_state(self, message):
+        pass
+
     
     def dialog_with_bot(self, message):
+
+        self.change_state(message)
+        self.run_state(message)
+
         state = self.message_to_coordinator['state']
         if state == 1:
             self.get_number_of_order(message)
@@ -153,8 +227,6 @@ class Implementer(telebot.TeleBot):
 
 class Coordinator(ActiveUser):
 
-    state = ['Главное меню', 0, 0]
-    stack = [state.copy()]
     
     def __init__(self, name, id_):
         super().__init__(name, id_)
@@ -168,16 +240,7 @@ class Coordinator(ActiveUser):
         but_lower_right = types.KeyboardButton('Активные пользователи')
         main_keyboard.add(but_upper_left, but_upper_right, 
                           but_lower_left, but_lower_right)
-        self.main_keyboard = main_keyboard
-
-        lists_of_orders_keyboard = types.ReplyKeyboardMarkup(row_width=2)
-        but_upper_left = types.KeyboardButton('Активные наряды внедренцев')
-        but_upper_right = types.KeyboardButton('Наряды внедренцев')
-        but_lower_left = types.KeyboardButton('Наряды координатора')
-        but_lower_right = types.KeyboardButton('Назад')
-        lists_of_orders_keyboard.add(but_upper_left, but_upper_right, 
-                                     but_lower_left, but_lower_right)
-        self.lists_of_orders_keyboard = lists_of_orders_keyboard
+        self.main_keyboard = main_keyboard        
 
         list_of_employees_keyboard = types.ReplyKeyboardMarkup(row_width=2)
         but_upper_left = types.KeyboardButton('Добавить сотрудника')
@@ -317,7 +380,8 @@ class Coordinator(ActiveUser):
             super().send_message(self.id, text, 
                                  reply_markup=self.back_keyboard)
         elif self.state[2] == 1:
-            self.cache[0] = message.text
+            if message.text != 'Назад':
+                self.cache[0] = message.text
             super().send_message(self.id, 'Укажите должность сотрудника', 
                                  reply_markup=self.position_keyboard)
         elif self.state[2] == 2:
@@ -429,12 +493,12 @@ class Coordinator(ActiveUser):
                         self.state[1] = message.text
                 elif self.state[1] == 'Добавить сотрудника':
                     if self.state[2] == 3:
-                        self.state = Coordinator.state.copy()
+                        self.state = ActiveUser.state.copy()
                     else:
                         self.state[2] += 1
                 elif self.state[1] == 'Удалить сотрудника':
                     if self.state[2] == 1:
-                        self.state = Coordinator.state.copy()
+                        self.state = ActiveUser.state.copy()
                     else:
                         self.state[2] += 1
             elif self.state[0] == 'Список нарядов':
@@ -445,19 +509,16 @@ class Coordinator(ActiveUser):
                 elif self.state[1] in {'Активные наряды внедренцев',
                                        'Наряды внедренцев',
                                        'Наряды координатора'}:
-                    self.state = Coordinator.state.copy()
+                    self.state = ActiveUser.state.copy()
             elif self.state[0] == 'Распределить наряд':
                 if self.state[1] == final_step:
-                    self.state = Coordinator.state.copy()
+                    self.state = ActiveUser.state.copy()
                 else:
                     self.state[1] += 1
                     
             self.stack.append(self.state.copy())
-            if self.stack[-1] == Coordinator.state:
-                self.stack = Coordinator.stack.copy()
-
-        print(self.stack)
-        print(self.state)
+            if self.stack[-1] == ActiveUser.state:
+                self.stack = ActiveUser.stack.copy()
 
 
     def dialog_with_bot(self, message):
