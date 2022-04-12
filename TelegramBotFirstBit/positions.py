@@ -22,8 +22,7 @@ try:
 except FileNotFoundError:
     raise FileNotFoundError('A token of bot not found.')
 
-# Почти во все методы необходимо добавить кнопку "Назад", возможно, 
-# стоит сделать это глобальной фунцией или методом суперкласса ActiveUser
+
 
 class ActiveUser(telebot.TeleBot):
 
@@ -42,7 +41,6 @@ class ActiveUser(telebot.TeleBot):
         but_continue = types.KeyboardButton('Продолжить')
         continue_keyboard.add(but_continue)
         self.continue_keyboard = continue_keyboard
-
 
 
 class Manager(ActiveUser):
@@ -159,8 +157,6 @@ class Coordinator(ActiveUser):
     stack = [state.copy()]
     
     def __init__(self, name, id_):
-        '''Закончена
-        '''
         super().__init__(name, id_)
         self.state = ['Главное меню', 0, 0]
         self.stack = [self.state.copy()]
@@ -202,7 +198,15 @@ class Coordinator(ActiveUser):
         
 
     def give_main_menu(self, error=False):
-        '''Закончена
+        '''Возращает сообщение координатору и клавиатуру с выбором 
+        функции из главного меню:
+        Распределить наряд - send_message_to_implementer()
+        Список нарядов - give_orders_menu()
+        Список сотрудников - give_employees_menu()
+        Активные пользователи - give_list_of_active_users()
+
+        Аргумент error используется для отправки сообщения пользователю
+        о том, что он неправильно выбрал функцию с клавиатуры
         '''
         if error:
             super().send_message(self.id, 'Не понял вас! Повторите попытку,'
@@ -214,7 +218,15 @@ class Coordinator(ActiveUser):
 
 
     def give_orders_menu(self, error=False):
-        '''Закончена
+        '''Возращает сообщение координатору и клавиатуру с выбором
+        функции из меню нарядов:
+        Активные наряды внедренцев - give_list_of_orders(kind='Акт...')
+        Наряды внедренцев - give_list_of_orders(kind='Наряды внедр...')
+        Наряды координатора - give_list_of_orders(kind='Наряды коо...')
+        Назад - возвращает state к предыдущему состоянию из stack
+
+        Ключевой аргумент error используется для отправки сообщения 
+        пользователю, что он неправильно выбрал функцию с клавиатуры
         '''
         if error:
             super().send_message(self.id, 'Не понял вас! Повторите попытку,'
@@ -226,7 +238,14 @@ class Coordinator(ActiveUser):
 
 
     def give_employees_menu(self, error=False):
-        '''Закончена
+        '''Возращает сообщение координатору и клавиатуру с выбором
+        функции из меню нарядов:
+        Добавить сотрудника - add_employee()
+        Удалить сотрудника - delete_employee()
+        Назад - возвращает к предыдущему состоянию из self.stack
+
+        Ключевой аргумент error используется для отправки сообщения 
+        пользователю, что он неправильно выбрал функцию с клавиатуры
         '''
         if error:
             super().send_message(self.id, 'Не понял вас! Повторите попытку,'
@@ -257,7 +276,8 @@ class Coordinator(ActiveUser):
 
 
     def give_list_of_active_users(self):
-        '''Закончена
+        '''Возращает список зарегистрированных пользователей, которые 
+        начали работу с ботом (с помощью команды /start)
         '''
         super().send_message(self.id, 'Сегодня со мной уже связались:')
         for position in active_users.items():
@@ -270,7 +290,7 @@ class Coordinator(ActiveUser):
 
 
     def give_list_of_employees(self):
-        '''Закончена
+        '''Возвращает список зарегистрированных пользователей.
         '''
         with open(PATH_ID_POSITION_NAME, encoding='UTF-8') as employees:
             text = employees.readlines()
@@ -279,7 +299,12 @@ class Coordinator(ActiveUser):
 
 
     def add_employee(self, message):
-        '''Закончена
+        '''Добавляет нового пользователя в систему по его id, position,
+        name. В качестве подсказки координатору, возвращается список 
+        пользователей, которые еще не зарегистрированы координатором, 
+        но связались с ботом через команду /start.
+
+        По умолчанию len(new_user) <= 10 (см. main.py).
         '''
         if self.state[2] == 0:
             self.cache = [None, None, None]
@@ -310,10 +335,11 @@ class Coordinator(ActiveUser):
 
 
     def delete_employee(self, message):
-        '''Не закончена
+        '''Удаляет пользователя из системы по его id.
         '''
         # Необходимо осуществить проверку в БД (НЕ в архиве), 
-        # есть ли активные наряды, связанные с этим сотрудником.
+        # есть ли активные наряды, связанные с этим сотрудником. 
+        # Добавить в issue на GitHub
         if self.state[2] == 0:
             super().send_message(self.id, 'Укажите id сотрудника, которого '
                                  'хотите удалить.')
